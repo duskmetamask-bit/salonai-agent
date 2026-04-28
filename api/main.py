@@ -35,8 +35,9 @@ Tone: friendly, professional, encouraging."""
 openai.api_key = os.environ.get("OPENAI_API_KEY", "")
 
 def ask_gpt(user_msg: str) -> str:
+    print(f"API Key present: {bool(openai.api_key)}", flush=True)
     if not openai.api_key:
-        return "⚠️ OpenAI API key not configured."
+        return "⚠️ OpenAI API key not configured. Set OPENAI_API_KEY in Vercel project env vars."
     try:
         response = openai.chat.completions.create(
             model="gpt-4o-mini",
@@ -55,6 +56,10 @@ def ask_gpt(user_msg: str) -> str:
 @app.get("/")
 def root():
     return FileResponse("index.html")
+
+@app.get("/health")
+def health():
+    return {"status": "ok", "api_key_configured": bool(openai.api_key)}
 
 # Schedule Assistant
 class ScheduleRequest(BaseModel):
