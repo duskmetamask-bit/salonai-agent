@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SalonAI Agent</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root { --salon-pink: #e8537a; --salon-dark: #1a1a2e; }
+    body { background: #faf5f7; font-family: system-ui, sans-serif; }
+    .tab-active { border-bottom: 3px solid var(--salon-pink); color: var(--salon-pink); }
+    .btn-salons { background: var(--salon-pink); }
+    .btn-salons:hover { background: #d14269; }
+    .card { background: white; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.07); }
+    .result-box { background: #f0f8ff; border-left: 4px solid var(--salon-pink); border-radius: 8px; padding: 16px; white-space: pre-wrap; font-size: 14px; line-height: 1.6; }
+    textarea, input[type="text"] { border: 1.5px solid #e5e7eb; border-radius: 8px; padding: 10px 14px; width: 100%; font-size: 14px; transition: border 0.2s; }
+    textarea:focus, input:focus { outline: none; border-color: var(--salon-pink); }
+    .loading { animation: pulse 1.2s infinite; }
+    @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.5; } }
+  </style>
+</head>
+<body>
+<div class="max-w-3xl mx-auto py-8 px-4">
+
+  <!-- Header -->
+  <div class="text-center mb-8">
+    <div class="text-5xl mb-2">✂️</div>
+    <h1 class="text-3xl font-bold" style="color:#1a1a2e">SalonAI Agent</h1>
+    <p class="text-gray-500 mt-1">AI assistant for independent hair salon owners</p>
+    <div class="mt-3 inline-flex items-center gap-2 bg-white px-4 py-2 rounded-full text-sm" style="border:1.5px solid #e8537a;color:#e8537a">
+      <span class="text-xs bg-[#e8537a] text-white px-2 py-0.5 rounded-full font-medium">PROTOTYPE</span>
+      $19/mo — coming soon
+    </div>
+  </div>
+
+  <!-- Tab Nav -->
+  <div class="flex border-b border-gray-200 mb-6">
+    <button onclick="switchTab('schedule')" id="tab-schedule" class="pb-3 px-4 font-medium text-sm transition-colors tab-active">📅 Schedule</button>
+    <button onclick="switchTab('messages')" id="tab-messages" class="pb-3 px-4 font-medium text-sm text-gray-400 transition-colors">💬 Messages</button>
+    <button onclick="switchTab('social')" id="tab-social" class="pb-3 px-4 font-medium text-sm text-gray-400 transition-colors">📱 Social</button>
+    <button onclick="switchTab('tasks')" id="tab-tasks" class="pb-3 px-4 font-medium text-sm text-gray-400 transition-colors">✅ Tasks</button>
+  </div>
+
+  <!-- ── Tab 1: Schedule ── -->
+  <div id="panel-schedule" class="space-y-4">
+    <div class="card p-5">
+      <h2 class="font-semibold text-lg mb-1">📅 Schedule Assistant</h2>
+      <p class="text-gray-500 text-sm mb-4">Paste your appointments for today — get smart suggestions to reduce no-shows and optimize flow.</p>
+      <textarea id="sched-text" rows="6" placeholder="Example:
+9:00 AM — Maria S. (balayage, new client)
+10:30 AM — Jen L. (cut + blowdry, returning)
+12:00 PM — Blocked
+2:00 PM — Tom R. (colour retouch)
+3:30 PM — Rosa K. (cut only)"></textarea>
+      <button onclick="callAPI('/api/schedule', {appointments: getVal('sched-text')}, 'sched')" class="btn-salons text-white px-5 py-2 rounded-lg text-sm font-medium mt-3 flex items-center gap-2">
+        <span>💡</span> Get Suggestions
+      </button>
+      <div id="sched-result" class="mt-4 hidden"></div>
+    </div>
+  </div>
+
+  <!-- ── Tab 2: Messages ── -->
+  <div id="panel-messages" class="space-y-4 hidden">
+    <div class="card p-5">
+      <h2 class="font-semibold text-lg mb-1">💬 Client Message Composer</h2>
+      <p class="text-gray-500 text-sm mb-4">Pre-built templates + AI personalizer — craft the perfect reminder or re-book message.</p>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+        <div>
+          <label class="text-xs font-medium text-gray-600 mb-1 block">Message type</label>
+          <select id="msg-type" class="w-full border rounded-lg px-3 py-2 text-sm">
+            <option value="">— Select —</option>
+            <option>Appointment Reminder (24hr before)</option>
+            <option>Appointment Reminder (1hr before)</option>
+            <option>Re-book after service</option>
+            <option>Thanks for your referral!</option>
+            <option>No-show / late cancellation follow-up</option>
+          </select>
+        </div>
+        <div>
+          <label class="text-xs font-medium text-gray-600 mb-1 block">Client name</label>
+          <input id="msg-name" type="text" placeholder="e.g. Maria">
+        </div>
+      </div>
+      <div class="mb-3">
+        <label class="text-xs font-medium text-gray-600 mb-1 block">Service</label>
+        <input id="msg-service" type="text" placeholder="e.g. balayage + cut">
+      </div>
+      <div class="mb-3">
+        <label class="text-xs font-medium text-gray-600 mb-1 block">Personal note (optional)</label>
+        <textarea id="msg-note" rows="2" placeholder="e.g. 'Loved the depth in your colour last time!'"></textarea>
+      </div>
+      <button onclick="callAPI('/api/message', {msg_type:getVal('msg-type'),client_name:getVal('msg-name'),service:getVal('msg-service'),custom_note:getVal('msg-note')}, 'msg')" class="btn-salons text-white px-5 py-2 rounded-lg text-sm font-medium flex items-center gap-2">
+        ✍️ Generate Message
+      </button>
+      <div id="msg-result" class="mt-4 hidden"></div>
+    </div>
+  </div>
+
+  <!-- ── Tab 3: Social ── -->
+  <div id="panel-social" class="space-y-4 hidden">
+    <div class="card p-5">
+      <h2 class="font-semibold text-lg mb-1">📱 Social Content Generator</h2>
+      <p class="text-gray-500 text-sm mb-4">Enter the service or look — get a catchy Instagram caption + hashtags.</p>
+      <div class="mb-3">
+        <label class="text-xs font-medium text-gray-600 mb-1 block">Service or look</label>
+        <input id="social-service" type="text" placeholder="e.g. Balayage on dark hair, coral tones, sun-kissed">
+      </div>
+      <div class="mb-3">
+        <label class="text-xs font-medium text-gray-600 mb-1 block">Vibe</label>
+        <select id="social-vibe" class="w-full border rounded-lg px-3 py-2 text-sm">
+          <option>Any</option>
+          <option>Professional / Salon Brand</option>
+          <option>Trendy / Avant-garde</option>
+          <option>Warm / Personal</option>
+          <option>Bold / Promo</option>
+        </select>
+      </div>
+      <button onclick="callAPI('/api/social', {service:getVal('social-service'),vibe:getVal('social-vibe')}, 'social')" class="btn-salons text-white px-5 py-2 rounded-lg text-sm font-medium flex items-center gap-2">
+        📸 Generate Caption
+      </button>
+      <div id="social-result" class="mt-4 hidden"></div>
+    </div>
+  </div>
+
+  <!-- ── Tab 4: Tasks ── -->
+  <div id="panel-tasks" class="space-y-4 hidden">
+    <div class="card p-5">
+      <h2 class="font-semibold text-lg mb-1">✅ Daily / Weekly Task List</h2>
+      <p class="text-gray-500 text-sm mb-4">Tell me your appointments or salon setup — get a prioritized to-do list.</p>
+      <textarea id="task-text" rows="5" placeholder="Example:
+Today: 5 clients, 2 new. 1 colour correction walk-in possible.
+We just switched booking software.
+I haven't posted on social in 3 days.
+Supplies arrive Wednesday."></textarea>
+      <button onclick="callAPI('/api/tasks', {context:getVal('task-text')}, 'task')" class="btn-salons text-white px-5 py-2 rounded-lg text-sm font-medium mt-3 flex items-center gap-2">
+        📋 Generate Task List
+      </button>
+      <div id="task-result" class="mt-4 hidden"></div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="text-center mt-10 text-gray-400 text-xs">
+    SalonAI Agent Prototype · Built with FastAPI + GPT-4o-mini · $19/mo launch Q2 2026
+  </div>
+</div>
+
+<script>
+const API = window.location.origin;
+
+function getVal(id) { return document.getElementById(id).value; }
+
+function switchTab(tab) {
+  ['schedule','messages','social','tasks'].forEach(t => {
+    document.getElementById('panel-'+t).classList.add('hidden');
+    document.getElementById('tab-'+t).classList.remove('tab-active');
+    document.getElementById('tab-'+t).classList.add('text-gray-400');
+  });
+  document.getElementById('panel-'+tab).classList.remove('hidden');
+  document.getElementById('tab-'+tab).classList.add('tab-active');
+  document.getElementById('tab-'+tab).classList.remove('text-gray-400');
+}
+
+function showResult(prefix, html) {
+  const el = document.getElementById(prefix+'-result');
+  el.innerHTML = '<div class="result-box">'+html+'</div>';
+  el.classList.remove('hidden');
+}
+
+function showError(prefix, msg) {
+  const el = document.getElementById(prefix+'-result');
+  el.innerHTML = '<div class="result-box" style="border-color:#e53e3e;color:#c53030">'+msg+'</div>';
+  el.classList.remove('hidden');
+}
+
+async function callAPI(endpoint, body, prefix) {
+  const btn = event.target.closest('button');
+  const orig = btn.innerHTML;
+  btn.innerHTML = '<span class="loading">⏳</span> Thinking...';
+  btn.disabled = true;
+  try {
+    const res = await fetch(API + endpoint, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    if (data.result) {
+      showResult(prefix, data.result.replace(/\n/g,'<br>'));
+    } else {
+      showError(prefix, '❌ Something went wrong. Check your API key.');
+    }
+  } catch(e) {
+    showError(prefix, '❌ Error: ' + e.message);
+  }
+  btn.innerHTML = orig;
+  btn.disabled = false;
+}
+</script>
+</body>
+</html>
